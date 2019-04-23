@@ -1,0 +1,7 @@
+apiVersion: k8s.refunc.io/v1beta3
+kind: Trigger
+metadata:
+  name: {{cookiecutter.FuncName}}-httptrigger
+spec:
+  funcName: {{cookiecutter.FuncName}}-0
+  type: httptrigger
