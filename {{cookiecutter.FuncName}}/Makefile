@@ -23,7 +23,7 @@ delete:
 
 test:
 	# test invoke func
-	@./hack/awslocal lambda invoke --function-name $(FUNC_NAME) /tmp/output.json && cat /tmp/output.json && rm /tmp/output.json
+	@./hack/awslocal lambda invoke --function-name $(FUNC_NAME) --payload $(shell python hack/payload.py) /tmp/output.json && cat /tmp/output.json && rm /tmp/output.json
 
 clean:
 	rm -rf dist dist.zip
