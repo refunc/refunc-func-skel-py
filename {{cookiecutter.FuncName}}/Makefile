@@ -1,5 +1,4 @@
-ENDPOINT_URL	=	{{cookiecutter.RefuncAWSEndpoint}}
-FUNC_NAME	=	{{cookiecutter.FuncName}}
+FUNC_NAME={{cookiecutter.FuncName}}
 
 .cache:
 	mkdir .cache
@@ -15,18 +14,16 @@ build: dist.zip
 
 publish: delete build
 	# create func
-	aws --region us-east-1 --no-verify-ssl --no-sign-request --endpoint-url=$(ENDPOINT_URL) \
-lambda create-function --function-name $(FUNC_NAME) --handler main.lambda_handler --zip-file fileb://dist.zip --runtime python3.7 --role arn:aws:iam::refunc:role/refunc
+	@./hack/awslocal lambda create-function --function-name $(FUNC_NAME) --handler main.lambda_handler --zip-file fileb://dist.zip --runtime python3.7
+	@rm dist.zip
 
 delete:
 	# delete func
-	aws --region us-east-1 --no-verify-ssl --no-sign-request --endpoint-url=$(ENDPOINT_URL) \
-lambda delete-function --function-name $(FUNC_NAME)
+	@./hack/awslocal lambda delete-function --function-name $(FUNC_NAME)
 
 test:
-	aws --region us-east-1 --no-verify-ssl --no-sign-request --endpoint-url=$(ENDPOINT_URL) \
-lambda invoke --function-name $(FUNC_NAME) /tmp/output.json && cat /tmp/output.json && rm /tmp/output.json
-
+	# test invoke func
+	@./hack/awslocal lambda invoke --function-name $(FUNC_NAME) /tmp/output.json && cat /tmp/output.json && rm /tmp/output.json
 
 clean:
 	rm -rf dist dist.zip
