@@ -6,5 +6,5 @@ Usage:
 
 ```
 pip install cookiecutter
-cookiecutter git@github.com:Arvintian/refunc-func-skel-py.git
+cookiecutter git@github.com:refunc/refunc-func-skel-py.git
 ```
