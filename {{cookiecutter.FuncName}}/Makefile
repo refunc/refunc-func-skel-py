@@ -1,4 +1,8 @@
 FUNC_NAME={{cookiecutter.FuncName}}
+REGION={{cookiecutter.Region}}
+HANDLER=main.lambda_handler
+RUNTIME=python3.7
+TIMEOUT=120
 
 .cache:
 	mkdir .cache
@@ -12,17 +16,29 @@ dist.zip: dist
 
 build: dist.zip
 
-publish: delete build
+create: build
 	# create func
-	@./hack/awslocal lambda create-function --function-name $(FUNC_NAME) --handler main.lambda_handler --zip-file fileb://dist.zip --runtime python3.7
+	@awslocal lambda create-function --region $(REGION) --function-name $(FUNC_NAME) --handler $(HANDLER) --zip-file fileb://dist.zip --runtime $(RUNTIME) --timeout $(TIMEOUT)
+
+get: create
+	# get func
+	@awslocal lambda get-function --region $(REGION) --function-name $(FUNC_NAME) --region $(REGION)
+
+update-code: build
+	# update func code
+	@awslocal lambda update-function-code --region $(REGION) --function-name $(FUNC_NAME) --zip-file fileb://dist.zip
+
+update-config:
+	# update func config
+	@awslocal lambda update-function-configuration --region $(REGION) --function-name $(FUNC_NAME) --handler $(HANDLER) --runtime $(RUNTIME) --timeout $(TIMEOUT)
 
 delete:
 	# delete func
-	@./hack/awslocal lambda delete-function --function-name $(FUNC_NAME)
+	@awslocal lambda delete-function --region $(REGION) --function-name $(FUNC_NAME)
 
 test:
 	# test invoke func
-	@./hack/awslocal lambda invoke --function-name $(FUNC_NAME) --payload $(shell python hack/payload.py) /tmp/output.json && cat /tmp/output.json && rm /tmp/output.json
+	@awslocal lambda invoke --region $(REGION) --cli-binary-format raw-in-base64-out --function-name $(FUNC_NAME) --payload $(shell python hack/payload.py) /dev/stdout
 
 clean:
 	rm -rf dist dist.zip
