@@ -1,4 +1,5 @@
 {
     "RefuncAWSEndpoint": "http://localhost:9000",
-    "FuncName": "func-template"
+    "FuncName": "func-template",
+    "Region": ""
 }

@@ -1,3 +1,27 @@
+#!/bin/sh
+set -e
+
+WORKDIR="/tmp/awsinstall"
+INSTALL_DIR="/usr/local/aws-cli"
+BIN_DIR="/usr/local/bin"
+AWSLOCAL=$WORKDIR/awslocal
+
+# clean work dir
+if [ -d $WORKDIR ]; then
+    rm -rf ${WORKDIR}
+fi
+
+mkdir -p ${WORKDIR}
+
+# install aws cli
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "${WORKDIR}/awscliv2.zip"
+unzip ${WORKDIR}/awscliv2.zip -d ${WORKDIR}
+
+${WORKDIR}/aws/install --update -i ${INSTALL_DIR} -b ${BIN_DIR}
+
+
+# install awslocal
+cat >${AWSLOCAL}<<EOF
 #!/usr/bin/env python
 
 """
@@ -21,7 +45,6 @@ from threading import Thread
 
 ENDPOINT_URL = "{{cookiecutter.RefuncAWSEndpoint}}"
 
-
 def usage():
     print(__doc__.strip())
 
@@ -32,7 +55,7 @@ def to_str(s):
     return s
 
 
-def run(cmd, env={}):
+def run(cmd, env):
 
     def output_reader(pipe, out):
         with pipe:
@@ -41,9 +64,7 @@ def run(cmd, env={}):
                 out.write(line)
                 out.flush()
 
-    process = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                               stdout=subprocess.PIPE, stdin=subprocess.PIPE, env=env)
-
+    process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, stdin=subprocess.PIPE, env=env)
     Thread(target=output_reader, args=[process.stdout, sys.stdout]).start()
     Thread(target=output_reader, args=[process.stderr, sys.stderr]).start()
 
@@ -56,7 +77,7 @@ def main():
         return usage()
 
     # prepare cmd args
-    cmd_args = ["aws", "--no-verify-ssl", "--no-sign-request", "--endpoint-url", ENDPOINT_URL]
+    cmd_args = ["aws", "--no-verify-ssl", "--endpoint-url", ENDPOINT_URL]
     cmd_args.extend(sys.argv[1:])
     role = False
     for param in sys.argv[1:]:
@@ -69,7 +90,7 @@ def main():
     # prepare env vars
     env_dict = os.environ.copy()
     env_dict['PYTHONWARNINGS'] = os.environ.get('PYTHONWARNINGS', 'ignore:Unverified HTTPS request')
-    env_dict['AWS_DEFAULT_REGION'] = os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
+    env_dict['AWS_DEFAULT_REGION'] = os.environ.get('AWS_DEFAULT_REGION', '') # region will use as funcdef's namespace
     env_dict['AWS_ACCESS_KEY_ID'] = os.environ.get('AWS_ACCESS_KEY_ID', '_not_needed_locally_')
     env_dict['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '_not_needed_locally_')
 
@@ -79,3 +100,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+EOF
+
+chmod 755 ${AWSLOCAL} && cp ${AWSLOCAL} ${BIN_DIR}/awslocal && rm -rf ${WORKDIR}
