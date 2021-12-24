@@ -5,11 +5,12 @@ RUNTIME=python3.7
 TIMEOUT=120
 
 .cache:
-	mkdir .cache
+	mkdir -p .cache
 
 dist: .cache clean
-	mkdir dist && cp -r src/* dist/ && cp requirements.txt dist/
-	docker run --rm -v $(shell pwd):/var/task lambci/lambda:build-python3.7 pip install -r requirements.txt --cache-dir .cache --target dist
+	mkdir -p dist && cp -r src/* dist/ && cp requirements.txt dist/
+	docker run --rm -u $(shell id -u):$(shell id -g) -v $(shell pwd)/dist:/var/task/dist -v $(shell pwd)/.cache:/cache lambci/lambda:build-python3.7 \
+	pip install -r dist/requirements.txt --cache-dir /cache --target dist
 
 dist.zip: dist
 	cd dist && zip -r9 ../dist.zip *
@@ -20,7 +21,7 @@ create: build
 	# create func
 	@awslocal lambda create-function --region $(REGION) --function-name $(FUNC_NAME) --handler $(HANDLER) --zip-file fileb://dist.zip --runtime $(RUNTIME) --timeout $(TIMEOUT)
 
-get: create
+get:
 	# get func
 	@awslocal lambda get-function --region $(REGION) --function-name $(FUNC_NAME) --region $(REGION)
 
