@@ -4,7 +4,6 @@ set -e
 WORKDIR="/tmp/awsinstall"
 INSTALL_DIR="/usr/local/aws-cli"
 BIN_DIR="/usr/local/bin"
-AWSLOCAL=$WORKDIR/awslocal
 
 # clean work dir
 if [ -d $WORKDIR ]; then
@@ -19,87 +18,5 @@ unzip ${WORKDIR}/awscliv2.zip -d ${WORKDIR}
 
 ${WORKDIR}/aws/install --update -i ${INSTALL_DIR} -b ${BIN_DIR}
 
-
-# install awslocal
-cat >${AWSLOCAL}<<EOF
-#!/usr/bin/env python
-
-"""
-Thin wrapper around the "aws" command line interface (CLI) for use with refunc.
-The "awslocal" CLI allows you to easily interact with your local services without
-having to specify "--endpoint-url=http://..." for every single command.
-Example:
-Instead of the following command ...
-aws --endpoint-url=https://localhost:4568 --no-verify-ssl lambda
-... you can simply use this:
-awslocal lambda
-Options:
-  Run "aws help" for more details on the aws CLI subcommands.
-"""
-
-import os
-import sys
-import subprocess
-import six
-from threading import Thread
-
-ENDPOINT_URL = "{{cookiecutter.RefuncAWSEndpoint}}"
-
-def usage():
-    print(__doc__.strip())
-
-
-def to_str(s):
-    if six.PY3 and not isinstance(s, six.string_types):
-        s = s.decode('utf-8')
-    return s
-
-
-def run(cmd, env):
-
-    def output_reader(pipe, out):
-        with pipe:
-            for line in iter(pipe.readline, b''):
-                line = to_str(line)
-                out.write(line)
-                out.flush()
-
-    process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, stdin=subprocess.PIPE, env=env)
-    Thread(target=output_reader, args=[process.stdout, sys.stdout]).start()
-    Thread(target=output_reader, args=[process.stderr, sys.stderr]).start()
-
-    process.wait()
-    sys.exit(process.returncode)
-
-
-def main():
-    if len(sys.argv) > 1 and sys.argv[1] == '-h':
-        return usage()
-
-    # prepare cmd args
-    cmd_args = ["aws", "--no-verify-ssl", "--endpoint-url", ENDPOINT_URL]
-    cmd_args.extend(sys.argv[1:])
-    role = False
-    for param in sys.argv[1:]:
-        if param.startswith("create-function"):
-            role = True
-    if role:
-        cmd_args.append("--role")
-        cmd_args.append("")
-    print(" ".join(cmd_args))
-    # prepare env vars
-    env_dict = os.environ.copy()
-    env_dict['PYTHONWARNINGS'] = os.environ.get('PYTHONWARNINGS', 'ignore:Unverified HTTPS request')
-    env_dict['AWS_DEFAULT_REGION'] = os.environ.get('AWS_DEFAULT_REGION', '') # region will use as funcdef's namespace
-    env_dict['AWS_ACCESS_KEY_ID'] = os.environ.get('AWS_ACCESS_KEY_ID', '_not_needed_locally_')
-    env_dict['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '_not_needed_locally_')
-
-    # run the command
-    run(cmd_args, env_dict)
-
-
-if __name__ == "__main__":
-    main()
-EOF
-
-chmod 755 ${AWSLOCAL} && cp ${AWSLOCAL} ${BIN_DIR}/awslocal && rm -rf ${WORKDIR}
+# clean up
+rm -rf ${WORKDIR}

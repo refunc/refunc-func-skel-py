@@ -1,8 +1,8 @@
 FUNC_NAME={{cookiecutter.FuncName}}
-REGION={{cookiecutter.Region}}
 HANDLER=main.lambda_handler
 RUNTIME=python3.7
 TIMEOUT=120
+AWSLOCAL=./hack/awslocal
 
 .cache:
 	mkdir -p .cache
@@ -19,27 +19,27 @@ build: dist.zip
 
 create: build
 	# create func
-	@awslocal lambda create-function --region $(REGION) --function-name $(FUNC_NAME) --handler $(HANDLER) --zip-file fileb://dist.zip --runtime $(RUNTIME) --timeout $(TIMEOUT)
+	@$(AWSLOCAL) lambda create-function --function-name $(FUNC_NAME) --handler $(HANDLER) --zip-file fileb://dist.zip --runtime $(RUNTIME) --timeout $(TIMEOUT)
 
 get:
 	# get func
-	@awslocal lambda get-function --region $(REGION) --function-name $(FUNC_NAME) --region $(REGION)
+	@$(AWSLOCAL) lambda get-function --function-name $(FUNC_NAME)
 
 update-code: build
 	# update func code
-	@awslocal lambda update-function-code --region $(REGION) --function-name $(FUNC_NAME) --zip-file fileb://dist.zip
+	@$(AWSLOCAL) lambda update-function-code --function-name $(FUNC_NAME) --zip-file fileb://dist.zip
 
 update-config:
 	# update func config
-	@awslocal lambda update-function-configuration --region $(REGION) --function-name $(FUNC_NAME) --handler $(HANDLER) --runtime $(RUNTIME) --timeout $(TIMEOUT)
+	@$(AWSLOCAL) lambda update-function-configuration --function-name $(FUNC_NAME) --handler $(HANDLER) --runtime $(RUNTIME) --timeout $(TIMEOUT)
 
 delete:
 	# delete func
-	@awslocal lambda delete-function --region $(REGION) --function-name $(FUNC_NAME)
+	@$(AWSLOCAL) lambda delete-function --function-name $(FUNC_NAME)
 
 test:
 	# test invoke func
-	@awslocal lambda invoke --region $(REGION) --cli-binary-format raw-in-base64-out --function-name $(FUNC_NAME) --payload $(shell python hack/payload.py) /dev/stdout
+	@$(AWSLOCAL) lambda invoke --cli-binary-format raw-in-base64-out --function-name $(FUNC_NAME) --payload $(shell python hack/payload.py) /dev/stdout
 
 clean:
 	rm -rf dist dist.zip

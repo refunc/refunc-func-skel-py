@@ -2,13 +2,14 @@
 
 A func template for refunc
 
-Usage:
+## Usage:
 
 ```
 pip install cookiecutter
-cookiecutter git@github.com:refunc/refunc-func-skel-py.git
+cookiecutter https://github.com/refunc/refunc-func-skel-py.git
 ```
 
-TODO:
+
+## TODO:
 
 Support macos and windows platform.
